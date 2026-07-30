@@ -15,21 +15,26 @@ const floatHourToTime = (hourFloat) => {
   return `T${String(hours).padStart(2, '0')}${String(minutes).padStart(2, '0')}00Z`;
 };
 
-const getPeriodTimes = (dateObj, dstBeginDate, dstEndDate, semester) => {
+const getPeriodTimes = (dateObj, dstBeginDate, dstEndDate, semester, isModifiedSoC = false) => {
   let baseHour = 13.5; // 7:30 AM MDT = 13:30 UTC
   if (semester === 'fall' && dateObj >= dstEndDate) baseHour = 14.5;
   else if (semester === 'spring' && dateObj < dstBeginDate) baseHour = 14.5;
 
+  // Normal afternoon classes start 6 hours after 0730 (13:30 MDT).
+  // On a Modified SoC day, afternoon classes start 1 hour earlier at 12:30 MDT (+5 hours).
+  const p5Start = isModifiedSoC ? 5 : 6;
+  const p6Start = isModifiedSoC ? 6 : 7;
+
   return [
-    [floatHourToTime(baseHour), floatHourToTime(baseHour + 0.8833)],     // P1
-    [floatHourToTime(baseHour + 1), floatHourToTime(baseHour + 1.8833)], // P2
-    [floatHourToTime(baseHour + 2), floatHourToTime(baseHour + 2.8833)], // P3
-    [floatHourToTime(baseHour + 3), floatHourToTime(baseHour + 3.8833)], // P4
-    [floatHourToTime(baseHour + 6), floatHourToTime(baseHour + 6.8833)], // P5
-    [floatHourToTime(baseHour + 7), floatHourToTime(baseHour + 7.8833)], // P6
-    [floatHourToTime(baseHour), floatHourToTime(baseHour + 1.8833)],     // P7 (Double 1-2)
-    [floatHourToTime(baseHour + 2), floatHourToTime(baseHour + 3.8833)], // P8 (Double 3-4)
-    [floatHourToTime(baseHour + 6), floatHourToTime(baseHour + 7.8833)], // P9 (Double 5-6)
+    [floatHourToTime(baseHour), floatHourToTime(baseHour + 0.8833)],                       // P1: 0730 - 0823
+    [floatHourToTime(baseHour + 1), floatHourToTime(baseHour + 1.8833)],                   // P2: 0830 - 0923
+    [floatHourToTime(baseHour + 2), floatHourToTime(baseHour + 2.8833)],                   // P3: 0930 - 1023
+    [floatHourToTime(baseHour + 3), floatHourToTime(baseHour + 3.8833)],                   // P4: 1030 - 1123
+    [floatHourToTime(baseHour + p5Start), floatHourToTime(baseHour + p5Start + 0.8833)],   // P5: 1330 (or 1230) - 53m
+    [floatHourToTime(baseHour + p6Start), floatHourToTime(baseHour + p6Start + 0.8833)],   // P6: 1430 (or 1330) - 53m
+    [floatHourToTime(baseHour), floatHourToTime(baseHour + 1.8833)],                       // P7 (Double 1-2): 0730 - 0923
+    [floatHourToTime(baseHour + 2), floatHourToTime(baseHour + 3.8833)],                   // P8 (Double 3-4): 0930 - 1123
+    [floatHourToTime(baseHour + p5Start), floatHourToTime(baseHour + p6Start + 0.8833)],   // P9 (Double 5-6): 1330 (or 1230) - 1523 (or 1423)
   ];
 };
 
@@ -209,14 +214,24 @@ export default function App() {
     }
 
     // Classes
+    // 1. Define appendEvent WITH (cls, dateObj) as its parameters
     const appendEvent = (cls, dateObj) => {
       const dateStr = formatDateForICal(dateObj);
-      const periods = getPeriodTimes(dateObj, dstBeginSpring, dstDate, semester);
+      
+      // Check if THIS specific dateObj is a Modified SoC day
+      const dateIso = dateObj.toISOString().split('T')[0];
+      const isModSoC = modifiedSocs.some(m => m.date === dateIso);
+
+      // 2. Define periods HERE so it uses dateObj and isModSoC
+      const periods = getPeriodTimes(dateObj, dstBeginSpring, dstDate, semester, isModSoC);
+
+      // Map period numbers (1-9) to array indexes (0-8)
       let pIdx = parseInt(cls.period, 10) - 1;
       if (pIdx === 0 && cls.period === '7') pIdx = 6;
       if (pIdx === 2 && cls.period === '8') pIdx = 7;
       if (pIdx === 4 && cls.period === '9') pIdx = 8;
 
+      // 3. USE periods right here to grab the UTC start and end times!
       const [sUTC, eUTC] = periods[pIdx];
 
       ics += 'BEGIN:VEVENT\r\n';
@@ -229,6 +244,7 @@ export default function App() {
       ics += 'END:VEVENT\r\n\r\n';
     };
 
+    // 4. Loop through your classes and pass each date ('d') into appendEvent as 'dateObj'
     classes.forEach(cls => {
       const isM = cls.cycle.toLowerCase().includes('m');
       const targetDays = isM ? mdays : tdays;
