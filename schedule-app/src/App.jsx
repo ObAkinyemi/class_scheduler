@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   Calendar, PartyPopper, Clock, Save, Brush, 
   BookOpen, Bell, Plus, Trash2, MapPin, 
-  Download, AlertCircle, X, Hash 
+  Download, AlertCircle, X, Hash, Settings 
 } from 'lucide-react';
 
 // ============================================================================
@@ -45,26 +45,27 @@ const formatDateForICal = (dateObj) => {
 // ============================================================================
 
 export default function App() {
-  // --- CALENDAR PARAMETERS ---
-  const [semester, setSemester] = useState('spring');
-  const [firstDay, setFirstDay] = useState('2026-01-06');
-  const [dstChangeDate, setDstChangeDate] = useState('2026-03-08');
+  // --- INDEPENDENT SEMESTER & DATE PARAMETERS ---
+  const [semester, setSemester] = useState('fall');
+  const [firstDay, setFirstDay] = useState('2026-08-06');
+  const [dstChangeDate, setDstChangeDate] = useState('2026-11-01');
   const [generateMTDays, setGenerateMTDays] = useState(false);
 
   // --- MODULAR HOLIDAYS (DAYS OFF) & MODIFIED SOCs ---
   const [daysOff, setDaysOff] = useState([
-    { name: "Martin Luther King Jr Day", date: "2026-01-19" },
-    { name: "Presidents' Day", date: "2026-02-16" },
-    { name: "Spring Break", date: "2026-03-23" },
-    { name: "Spring Break", date: "2026-03-24" },
-    { name: "Spring Break", date: "2026-03-25" },
-    { name: "Spring Break", date: "2026-03-26" },
-    { name: "Spring Break", date: "2026-03-27" }
+    { name: "Labor Day", date: "2026-09-07" },
+    { name: "Commandant Training Day", date: "2026-09-11" },
+    { name: "Commandant Training Day", date: "2026-09-18" },
+    { name: "Columbus Day", date: "2026-10-12" },
+    { name: "Veterans Day", date: "2026-11-11" },
+    { name: "Thanksgiving Break", date: "2026-11-24" },
+    { name: "Thanksgiving Break", date: "2026-11-25" },
+    { name: "Thanksgiving Break", date: "2026-11-26" },
+    { name: "Thanksgiving Break", date: "2026-11-27" }
   ]);
   const [modifiedSocs, setModifiedSocs] = useState([
-    { name: "Modified SoC", date: "2026-01-23" },
-    { name: "Modified SoC", date: "2026-02-06" },
-    { name: "Modified SoC", date: "2026-02-27" }
+    { name: "Modified SoC", date: "2026-09-25" },
+    { name: "Modified SoC", date: "2026-10-16" }
   ]);
 
   // Modal visibility controls
@@ -81,7 +82,7 @@ export default function App() {
   
   // Tab State: 'full' or 'go'
   const [durationTab, setDurationTab] = useState('full');
-  const [goGroup, setGoGroup] = useState('E');
+  const [goGroup, setGoGroup] = useState('A');
   const [lessons, setLessons] = useState(10);
   const [athleticsToggle, setAthleticsToggle] = useState(false);
 
@@ -89,10 +90,10 @@ export default function App() {
   const [classes, setClasses] = useState([
     {
       id: 1,
-      name: 'Econ 332',
-      location: '5F23',
-      period: '6',
-      cycle: 'M & T Day',
+      name: 'Econ 361',
+      location: '5J37',
+      period: '2',
+      cycle: 'M-Day Only',
       reminder: true,
       duration: 'full',
       goGroup: null
@@ -100,6 +101,12 @@ export default function App() {
   ]);
 
   // --- FORM HANDLERS ---
+  const handleSemesterChange = (newSem) => {
+    setSemester(newSem);
+    // Automatically switch default GO letter to match the selected semester
+    setGoGroup(newSem === 'fall' ? 'A' : 'E');
+  };
+
   const handleAddClass = (e) => {
     e.preventDefault();
     if (!courseName.trim()) return;
@@ -281,7 +288,18 @@ export default function App() {
             </button>
             <div className="h-6 w-px bg-slate-300 mx-1"></div>
             <button 
-              onClick={() => alert("Schedule saved to local storage!")}
+              onClick={() => {
+                const dataToSave = {
+                  semester,
+                  firstDay,
+                  dstChangeDate,
+                  daysOff,
+                  modifiedSocs,
+                  classes
+                };
+                localStorage.setItem('usafa_schedule_data', JSON.stringify(dataToSave));
+                alert("Schedule and calendar settings permanently saved to LocalStorage!");
+              }}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border border-slate-300 rounded-md bg-white hover:bg-slate-50 shadow-xs"
             >
               <Save className="h-4 w-4 text-slate-600" /> Save
@@ -299,11 +317,64 @@ export default function App() {
       {/* MAIN CONTAINER */}
       <main className="max-w-5xl mx-auto px-6 py-8 space-y-8">
         
-        {/* CARD 1: ADD NEW CLASS */}
+        {/* ==================================================================== */}
+        {/* CARD 0: INDEPENDENT SEMESTER & DATE CONFIGURATION                  */}
+        {/* ==================================================================== */}
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+          <div className="border-b border-slate-100 pb-3 mb-4 flex items-center justify-between">
+            <div>
+              <h2 className="text-base font-bold flex items-center gap-2 text-slate-900">
+                <Settings className="h-4 w-4 text-blue-900" /> 1. Semester Configuration
+              </h2>
+              <p className="text-xs text-slate-500">Set your term parameters independent of individual class schedules</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* SEMESTER SELECTOR */}
+            <div>
+              <label className="block text-xs font-bold uppercase text-slate-600 mb-1">Semester Selection</label>
+              <select
+                value={semester}
+                onChange={(e) => handleSemesterChange(e.target.value)}
+                className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm bg-white font-semibold text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
+              >
+                <option value="fall">Fall Semester (GOs A – D)</option>
+                <option value="spring">Spring Semester (GOs E – H)</option>
+              </select>
+            </div>
+
+            {/* FIRST DAY OF CLASSES */}
+            <div>
+              <label className="block text-xs font-bold uppercase text-slate-600 mb-1">First Day of Classes</label>
+              <input
+                type="date"
+                value={firstDay}
+                onChange={(e) => setFirstDay(e.target.value)}
+                className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-900"
+              />
+            </div>
+
+            {/* DAYLIGHT SAVING TIME END/START DATE */}
+            <div>
+              <label className="block text-xs font-bold uppercase text-slate-600 mb-1">DST Change Date</label>
+              <input
+                type="date"
+                value={dstChangeDate}
+                onChange={(e) => setDstChangeDate(e.target.value)}
+                className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-900"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* ==================================================================== */}
+        {/* CARD 1: ADD NEW CLASS                                                */}
+        {/* ==================================================================== */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
           <div className="border-b border-slate-100 pb-4 mb-6">
             <h2 className="text-lg font-bold flex items-center gap-2 text-slate-900">
-              <BookOpen className="h-5 w-5 text-blue-900" /> Add New Class
+              <BookOpen className="h-5 w-5 text-blue-900" /> 2. Add New Class
             </h2>
             <p className="text-sm text-slate-500">Enter your course details to add it to your schedule</p>
           </div>
@@ -390,33 +461,15 @@ export default function App() {
                   </button>
                 </div>
 
-                {/* MODULAR SEMESTER + GO GROUP SELECTION (ONLY VISIBLE ON 'GO' TAB) */}
+                {/* MODULAR GO GROUP SELECTION (DRIVEN BY TOP SEMESTER SELECTION) */}
                 {durationTab === 'go' && (
                   <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg space-y-4 animate-fadeIn">
                     
-                    {/* FALL / SPRING SEMESTER TOGGLE */}
-                    <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-                      <span className="text-xs font-bold text-slate-700 uppercase">Target Semester:</span>
-                      <div className="flex gap-1 bg-slate-200 p-0.5 rounded">
-                        <button 
-                          type="button"
-                          onClick={() => setSemester('fall')}
-                          className={`px-2 py-0.5 text-xs font-bold rounded ${semester === 'fall' ? 'bg-white text-blue-900 shadow-xs' : 'text-slate-600'}`}
-                        >
-                          Fall (A-D)
-                        </button>
-                        <button 
-                          type="button"
-                          onClick={() => setSemester('spring')}
-                          className={`px-2 py-0.5 text-xs font-bold rounded ${semester === 'spring' ? 'bg-white text-blue-900 shadow-xs' : 'text-slate-600'}`}
-                        >
-                          Spring (E-H)
-                        </button>
-                      </div>
-                    </div>
-
                     <div>
-                      <label className="block text-xs font-bold uppercase text-slate-600 mb-2">Select GO Group</label>
+                      <div className="flex justify-between items-center mb-2">
+                        <label className="block text-xs font-bold uppercase text-slate-600">Select GO Group</label>
+                        <span className="text-[11px] text-slate-500 font-semibold uppercase">Showing {semester} GOs</span>
+                      </div>
                       <div className="grid grid-cols-4 gap-2">
                         {(semester === 'fall' ? ['A', 'B', 'C', 'D'] : ['E', 'F', 'G', 'H']).map(g => (
                           <button
@@ -444,6 +497,16 @@ export default function App() {
                           className="w-full border border-slate-300 rounded-md pl-9 pr-3 py-1.5 text-sm bg-white"
                         />
                       </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="text-xs font-medium text-slate-700">Athletics Toggle (PE GO Block)</span>
+                      <input 
+                        type="checkbox"
+                        checked={athleticsToggle}
+                        onChange={(e) => setAthleticsToggle(e.target.checked)}
+                        className="h-4 w-4 text-blue-900 rounded cursor-pointer"
+                      />
                     </div>
                   </div>
                 )}
@@ -476,7 +539,9 @@ export default function App() {
           </form>
         </div>
 
-        {/* CARD 2: YOUR SCHEDULE LIST */}
+        {/* ==================================================================== */}
+        {/* CARD 2: YOUR SCHEDULE LIST                                           */}
+        {/* ==================================================================== */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
           <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
             <div>
@@ -538,7 +603,9 @@ export default function App() {
           </div>
         </div>
 
-        {/* CARD 3: READY TO EXPORT */}
+        {/* ==================================================================== */}
+        {/* CARD 3: READY TO EXPORT                                              */}
+        {/* ==================================================================== */}
         <div className="bg-gradient-to-br from-blue-900/5 to-blue-900/10 rounded-xl border border-blue-900/20 shadow-sm p-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div>
