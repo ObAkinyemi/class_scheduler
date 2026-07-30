@@ -266,15 +266,38 @@ export default function App() {
     };
 
     // 4. Loop through your classes and pass each date ('d') into appendEvent as 'dateObj'
+    // 4. Loop through your classes and assign them to M or T days
     classes.forEach(cls => {
-      const isM = cls.cycle.toLowerCase().includes('m');
-      const targetDays = isM ? mdays : tdays;
-      const targetGOs = isM ? mGOs : tGOs;
+      // LOGIC: We check if the cycle string contains 'm-day' or 'every day (m & t)'
+      const cycleLower = cls.cycle.toLowerCase();
+      const isM = cycleLower.includes('m-day') || cycleLower.includes('(m & t)');
+      const isT = cycleLower.includes('t-day') || cycleLower.includes('(m & t)');
 
+      // DEBUG PRINT: Print out exactly how the script classified this course
+      console.log(`[ICS DEBUG] Checking class: "${cls.name}" | Cycle: "${cls.cycle}"`);
+      console.log(` -> Assigned to M-Days? ${isM} | Assigned to T-Days? ${isT}`);
+
+      // Handle Full Semester classes
       if (cls.duration === 'full') {
-        targetDays.forEach(d => appendEvent(cls, d));
-      } else if (cls.goGroup && targetGOs[cls.goGroup]) {
-        targetGOs[cls.goGroup].forEach(d => appendEvent(cls, d));
+        if (isM) {
+          console.log(` -> Adding ${cls.name} to ${mdays.length} Full-Semester M-Days`);
+          mdays.forEach(d => appendEvent(cls, d));
+        }
+        if (isT) {
+          console.log(` -> Adding ${cls.name} to ${tdays.length} Full-Semester T-Days`);
+          tdays.forEach(d => appendEvent(cls, d));
+        }
+      } 
+      // Handle GO Block classes
+      else if (cls.goGroup) {
+        if (isM && mGOs[cls.goGroup]) {
+          console.log(` -> Adding ${cls.name} to M-Day GO Group ${cls.goGroup}`);
+          mGOs[cls.goGroup].forEach(d => appendEvent(cls, d));
+        }
+        if (isT && tGOs[cls.goGroup]) {
+          console.log(` -> Adding ${cls.name} to T-Day GO Group ${cls.goGroup}`);
+          tGOs[cls.goGroup].forEach(d => appendEvent(cls, d));
+        }
       }
     });
 
