@@ -50,14 +50,27 @@ const formatDateForICal = (dateObj) => {
 // ============================================================================
 
 export default function App() {
+
+  // 1. ADD THIS HELPER RIGHT AT THE TOP OF App() (Not nested inside anything else)
+  const getSavedData = (key, fallback) => {
+    try {
+      const saved = localStorage.getItem('usafa_schedule_data');
+      if (!saved) return fallback;
+      const parsed = JSON.parse(saved);
+      return parsed[key] !== undefined ? parsed[key] : fallback;
+    } catch (e) {
+      return fallback;
+    }
+  };
+
   // --- INDEPENDENT SEMESTER & DATE PARAMETERS ---
-  const [semester, setSemester] = useState('fall');
-  const [firstDay, setFirstDay] = useState('2026-08-06');
-  const [dstChangeDate, setDstChangeDate] = useState('2026-11-01');
+  const [semester, setSemester] = useState(() => getSavedData('semester', 'fall'));
+  const [firstDay, setFirstDay] = useState(() => getSavedData('firstDay', '2026-08-06'));
+  const [dstChangeDate, setDstChangeDate] = useState(() => getSavedData('dstChangeDate', '2026-11-01'));
   const [generateMTDays, setGenerateMTDays] = useState(false);
 
   // --- MODULAR HOLIDAYS (DAYS OFF) & MODIFIED SOCs ---
-  const [daysOff, setDaysOff] = useState([
+  const [daysOff, setDaysOff] = useState(() => getSavedData('daysOff', [
     { name: "Labor Day", date: "2026-09-07" },
     { name: "Commandant Training Day", date: "2026-09-11" },
     { name: "Commandant Training Day", date: "2026-09-18" },
@@ -67,32 +80,31 @@ export default function App() {
     { name: "Thanksgiving Break", date: "2026-11-25" },
     { name: "Thanksgiving Break", date: "2026-11-26" },
     { name: "Thanksgiving Break", date: "2026-11-27" }
-  ]);
-  const [modifiedSocs, setModifiedSocs] = useState([
+  ]));
+  
+  const [modifiedSocs, setModifiedSocs] = useState(() => getSavedData('modifiedSocs', [
     { name: "Modified SoC", date: "2026-09-25" },
     { name: "Modified SoC", date: "2026-10-16" }
-  ]);
+  ]));
 
-  // Modal visibility controls
-  const [activeModal, setActiveModal] = useState(null); // 'holidays' | 'socs' | null
+  // Modal visibility controls (Leave these alone!)
+  const [activeModal, setActiveModal] = useState(null);
   const [newModalName, setNewModalName] = useState('');
   const [newModalDate, setNewModalDate] = useState('');
 
-  // --- CLASS CREATION FORM STATE ---
+  // --- CLASS CREATION FORM STATE (Leave these alone!) ---
   const [courseName, setCourseName] = useState('');
   const [location, setLocation] = useState('');
   const [period, setPeriod] = useState('1');
   const [cycle, setCycle] = useState('Every Day (M & T)');
   const [reminder, setReminder] = useState(true);
-  
-  // Tab State: 'full' or 'go'
   const [durationTab, setDurationTab] = useState('full');
   const [goGroup, setGoGroup] = useState('A');
   const [lessons, setLessons] = useState(10);
   const [athleticsToggle, setAthleticsToggle] = useState(false);
 
   // --- ADDED CLASSES LIST ---
-  const [classes, setClasses] = useState([
+  const [classes, setClasses] = useState(() => getSavedData('classes', [
     {
       id: 1,
       name: 'Econ 361',
@@ -103,7 +115,7 @@ export default function App() {
       duration: 'full',
       goGroup: null
     }
-  ]);
+  ]));
 
   // --- FORM HANDLERS ---
   const handleSemesterChange = (newSem) => {
