@@ -128,18 +128,27 @@ export default function App() {
     e.preventDefault();
     if (!courseName.trim()) return;
 
+    // LOGIC: If it's a GO block, combine the M/T dropdown choice with the GO letter
+    // Example output: "M-Day Only (GO A)" or "T-Day Only (GO E)"
+    const formattedCycle = durationTab === 'go' 
+      ? `${cycle} (GO ${goGroup})` 
+      : cycle;
+
     const newClass = {
       id: Date.now(),
       name: courseName,
       location: location || 'TBD',
       period,
-      cycle: durationTab === 'go' ? `GO ${goGroup}` : cycle,
+      cycle: formattedCycle, // <-- Now it will always contain 'M' if you picked M-Day!
       reminder,
       duration: durationTab,
       goGroup: durationTab === 'go' ? goGroup : null,
       lessons: durationTab === 'go' ? lessons : null,
       athletics: durationTab === 'go' ? athleticsToggle : false
     };
+
+    // DEBUG PRINT: Watch the console to verify what you just created
+    console.log("=== NEW CLASS ADDED ===", newClass);
 
     setClasses([newClass, ...classes]);
     setCourseName('');
@@ -177,15 +186,15 @@ export default function App() {
     let dayType = 'M';
 
     // Loop until 40 M-days and 40 T-days are collected
-    while (mdays.length < 40 || tdays.length < 40) {
+    while (mdays.length < 41 || tdays.length < 41) {
       const dayOfWeek = currentDay.getDay();
       const dateStr = currentDay.toISOString().split('T')[0];
 
       if (dayOfWeek !== 0 && dayOfWeek !== 6 && !excludedDatesString.includes(dateStr)) {
-        if (dayType === 'M' && mdays.length < 40) {
+        if (dayType === 'M' && mdays.length < 41) {
           mdays.push(new Date(currentDay));
           dayType = 'T';
-        } else if (dayType === 'T' && tdays.length < 40) {
+        } else if (dayType === 'T' && tdays.length < 41) {
           tdays.push(new Date(currentDay));
           dayType = 'M';
         }
@@ -194,8 +203,8 @@ export default function App() {
     }
 
     const getGos = (arr) => semester === 'fall' 
-      ? { A: arr.slice(0,10), B: arr.slice(10,20), C: arr.slice(20,30), D: arr.slice(30,40) }
-      : { E: arr.slice(0,10), F: arr.slice(10,20), G: arr.slice(20,30), H: arr.slice(30,40) };
+      ? { A: arr.slice(0,10), B: arr.slice(10,20), C: arr.slice(20,30), D: arr.slice(30,41) }
+      : { E: arr.slice(0,10), F: arr.slice(10,20), G: arr.slice(20,30), H: arr.slice(30,41) };
 
     const mGOs = getGos(mdays);
     const tGOs = getGos(tdays);
